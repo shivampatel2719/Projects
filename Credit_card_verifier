@@ -1,0 +1,59 @@
+import numpy as np
+import pandas as pd
+import scipy as sp
+import matplotlib.pyplot as plt
+import seaborn as sn
+import statsmodels.formula.api as sm
+from sklearn.metrics import classification_report,accuracy_score
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.model_selection import train_test_split
+sheet=pd.read_csv('creditcard.csv')
+data=sheet.sample(frac=0.4,random_state=0)
+data.hist(figsize=(20,20))
+plt.show()
+fraud=data[data.Class==1]
+valid=data[data.Class==0]
+outlier=len(fraud)/float(len(valid))
+corrmat=data.corr()
+plt.figure(figsize=(12,9))
+sn.heatmap(corrmat)
+#getting column from dataframe
+columns=data.columns.tolist()
+#filter the columns
+columms=[c for c in columns if c not in ['Class']]
+#preparing inputs and target
+x=data[columns]
+y=data['Class']
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=0)
+classifier={
+    "Iso":IsolationForest(max_samples=len(x),contamination=outlier,random_state=0),
+    "LOF":LocalOutlierFactor(n_neighbors=20,contamination=outlier)
+}
+for i,(clf_name,clf) in enumerate(classifier.items()):
+    if clf_name=="LOF":
+        y_pred=clf.fit_predict(x)
+    else:
+        clf.fit(x)
+        scores=clf.decision_function(x)
+        y_pred=clf.predict(x)
+    y_pred[y_pred==1]=0
+    y_pred[y_pred==-1]=1
+    
+    print("{}".format(clf_name))
+    print(classification_report(y,y_pred))
+   # Iso
+   #          precision    recall  f1-score   support
+#
+ #         0       1.00      1.00      1.00    113724
+  #        1       0.42      0.42      0.42       199
+
+#avg / total       1.00      1.00      1.00    113923
+
+#LOF
+ #            precision    recall  f1-score   support
+
+  #        0       1.00      1.00      1.00    113724
+   #       1       0.01      0.01      0.01       199
+
+#avg / total       1.00      1.00      1.00    113923
