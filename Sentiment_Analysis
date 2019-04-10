@@ -1,0 +1,52 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+#import dataset
+sheet=pd.read_csv('Restaurant_Reviews.tsv',delimiter='\t',quoting=3)
+#option pd.read_csv('Restaurant_Reviews.csv',delimiter='\t',quoting=3)
+#we are ignoring " " by quoting==3
+cleaned_review=[]
+#cleaning text
+import re
+import nltk
+from nltk.stem.porter import PorterStemmer
+#downloading stock words
+#nltk.download('stopwords')
+from nltk.corpus import stopwords
+#making object of stemmer
+ps=PorterStemmer()
+corpus=[]
+#cleaning the whole data
+for i in range(len(sheet)):
+    #removing elements that are not alphabet
+    review=re.sub('[^a-zA-z]',' ',sheet['Review'][i])
+    #lower casing
+    review=review.lower()
+    #splitting
+    review=review.split()
+    #stemming and removing stopword
+    #for words in review:
+     #   if words=='not':
+      #      corpus.append(ps.stem(words))
+       # if words not in set(stopwords.words('english')):
+        #    corpus.append(ps.stem(words))
+    review=[ps.stem(word) for word in review if not word in set(stopwords.words('english'))]
+    #joining again
+    review=' '.join(review)
+    #corpus=[]
+    cleaned_review.append(review)
+
+from sklearn.feature_extraction.text import CountVectorizer
+#creating bag of words
+cv=CountVectorizer(max_features=1000)
+x=cv.fit_transform(cleaned_review).astype(float).toarray()
+y=sheet.iloc[:,1]
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+x_std=StandardScaler()
+x=x_std.fit_transform(x)
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.25,random_state=0)
+cls=GaussianNB()
+cls.fit(x_train,y_train)
+y_p=cls.predict(x_test)
